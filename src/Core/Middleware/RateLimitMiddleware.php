@@ -23,9 +23,15 @@ class RateLimitMiddleware
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $key = "rate_limit:{$ip}:{$route}";
 
-        $current = (int)Cache::get($key);
+        // Atomic Increment
+        $client = Cache::getClient();
+        $newVal = $client->incr($key);
 
-        if ($current >= $limit) {
+        if ($newVal === 1) {
+            $client->expire($key, $window);
+        }
+
+        if ($newVal > $limit) {
             http_response_code(429);
             header('Retry-After: ' . $window);
             echo json_encode([
@@ -33,13 +39,6 @@ class RateLimitMiddleware
                 'message' => 'Bastivan Consulting API: Rate limit exceeded.'
             ]);
             exit;
-        }
-
-        // Increment and set TTL if new
-        $client = Cache::getClient();
-        $newVal = $client->incr($key);
-        if ($newVal === 1) {
-            $client->expire($key, $window);
         }
 
         // Headers
