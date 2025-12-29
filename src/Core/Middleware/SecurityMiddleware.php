@@ -46,17 +46,21 @@ class SecurityMiddleware
         }
 
         // 3. Resolve Real IP from CDNs (Cloudflare, Gcore, Nginx Proxy)
-        $trustedProxies = Config::get('TRUSTED_PROXIES', '*'); // Should be specific IPs in real prod
+        // We MUST verify that the request actually comes from a trusted proxy before accepting header spoofing.
+        $actualRemoteIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-        if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-            // Cloudflare
-            $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
-        } elseif (isset($_SERVER['HTTP_X_GCORE_REMOTE_IP'])) { // Hypothetical Gcore header
-            $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_GCORE_REMOTE_IP'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            // Standard Proxy - Take the first IP in the list
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $_SERVER['REMOTE_ADDR'] = trim($ips[0]);
+        if (\Bastivan\UniversalApi\Core\TrustedProxyResolver::isTrusted($actualRemoteIp)) {
+            if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+                // Cloudflare
+                $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+            } elseif (isset($_SERVER['HTTP_X_GCORE_REMOTE_IP'])) {
+                // Gcore
+                $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_GCORE_REMOTE_IP'];
+            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                // Standard Proxy - Take the first IP in the list
+                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $_SERVER['REMOTE_ADDR'] = trim($ips[0]);
+            }
         }
 
         // 4. HTTP Method Restriction (Surface Attack Reduction)
