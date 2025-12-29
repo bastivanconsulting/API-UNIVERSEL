@@ -24,6 +24,17 @@ class CacheMiddleware
         if (!empty($_SERVER['QUERY_STRING'])) {
             $fullUri .= '?' . $_SERVER['QUERY_STRING'];
         }
+
+        // Fix: Include Authorization header in cache key to prevent data leak between users
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $fullUri .= '|' . $_SERVER['HTTP_AUTHORIZATION'];
+        }
+
+        // Fix: Include Cookie header to handle session-based auth
+        if (isset($_SERVER['HTTP_COOKIE'])) {
+            $fullUri .= '|' . $_SERVER['HTTP_COOKIE'];
+        }
+
         return 'route_cache:' . md5($fullUri);
     }
 
