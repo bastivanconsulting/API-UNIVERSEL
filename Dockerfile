@@ -60,12 +60,7 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/html/logs
 
 # Supervisor Config to run Nginx and FPM
-RUN echo '[supervisord] \
-nodaemon=true \
-[program:nginx] \
-command=nginx -g "daemon off;" \
-[program:php-fpm] \
-command=docker-php-entrypoint php-fpm' > /etc/supervisord.conf
+COPY supervisord.conf /etc/supervisord.conf
 
 EXPOSE 80
 
