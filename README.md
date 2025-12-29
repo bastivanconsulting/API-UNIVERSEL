@@ -84,6 +84,163 @@ Cette API implémente plusieurs couches de sécurité par défaut :
 *   **SecurityMiddleware** : Vérifie SSL et nettoie les headers.
 *   **RateLimitMiddleware** : Protège contre le brute-force.
 
+## 🪝 Système de Hooks
+
+Le système de Hooks (`hook/`) vous permet d'étendre l'API, d'ajouter des routes, des contrôleurs et des middlewares sans modifier le cœur (`src/Core`) de l'application.
+
+Voici comment utiliser les fonctionnalités avancées dans `hook/routes.php`.
+
+### 1. Activer/Désactiver le Cache sur une Route
+
+Le cache stocke la réponse complète (Body, Headers, Status) dans Redis pour la durée spécifiée.
+
+```php
+use Bastivan\UniversalApi\Hook\Controllers\MyController;
+
+// Activer le cache pour 60 secondes
+$router->get('/mon-api/data', [MyController::class, 'index'], [
+    'cache' => 60
+]);
+
+// Route sans cache (par défaut)
+$router->get('/mon-api/live', [MyController::class, 'live']);
+```
+
+### 2. Restriction IP sur les Routes
+
+Vous pouvez restreindre l'accès à certaines routes uniquement à une liste d'IPs (WhiteList).
+
+```php
+// Accessible uniquement depuis ces IPs
+$router->get('/admin/stats', [MyController::class, 'stats'], [
+    'security' => [
+        'allowed_ips' => ['192.168.1.50', '10.0.0.1']
+    ]
+]);
+```
+
+### 3. Créer des Routes avec Base de Données
+
+Utilisez la classe `Database` pour interagir avec MySQL/MariaDB ou PostgreSQL.
+
+Exemple de contrôleur (`hook/Controllers/UserController.php`) :
+
+```php
+namespace Bastivan\UniversalApi\Hook\Controllers;
+
+use Bastivan\UniversalApi\Core\Database;
+
+class UserController
+{
+    public function getUser($id)
+    {
+        $db = Database::getInstance();
+
+        // Requête préparée (Sécurité Injection SQL)
+        $stmt = $db->query("SELECT * FROM users WHERE id = ?", [$id]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            header('Content-Type: application/json');
+            echo json_encode($user);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'User not found']);
+        }
+    }
+}
+```
+
+Dans `hook/routes.php` :
+```php
+$router->get('/users/([0-9]+)', [Bastivan\UniversalApi\Hook\Controllers\UserController::class, 'getUser']);
+```
+
+### 4. Créer un Système d'Authentification (Token)
+
+Voici comment implémenter une authentification simple via Token sans toucher au Core.
+
+#### A. La Table SQL
+Créez une table `api_tokens` :
+```sql
+CREATE TABLE api_tokens (
+    token VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### B. Le Middleware d'Authentification
+Créez `hook/Middleware/AuthMiddleware.php` :
+
+```php
+<?php
+
+namespace Bastivan\UniversalApi\Hook\Middleware;
+
+use Bastivan\UniversalApi\Core\Database;
+
+class AuthMiddleware
+{
+    public static function check(): void
+    {
+        $headers = getallheaders();
+        $token = null;
+
+        $authHeader = $headers['Authorization'] ?? '';
+
+        // Support "Bearer <token>"
+        if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+             $token = $matches[1];
+        } else {
+             // Fallback: Use the whole header if no Bearer prefix (or handle as needed)
+             $token = $authHeader ?: null;
+        }
+
+        if (!$token) {
+            self::abort();
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT user_id FROM api_tokens WHERE token = ?", [$token]);
+
+        if (!$stmt->fetch()) {
+            self::abort();
+        }
+    }
+
+    private static function abort(): void
+    {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => '403 Forbidden - Invalid or missing token']);
+        exit;
+    }
+}
+```
+
+#### C. Utilisation dans le Contrôleur
+Dans votre contrôleur (`hook/Controllers/SecureController.php`) :
+
+```php
+namespace Bastivan\UniversalApi\Hook\Controllers;
+
+use Bastivan\UniversalApi\Hook\Middleware\AuthMiddleware;
+
+class SecureController
+{
+    public function dashboard()
+    {
+        // Appeler le middleware manuellement au début de la méthode
+        AuthMiddleware::check();
+
+        echo json_encode(['message' => 'Bienvenue dans la zone sécurisée']);
+    }
+}
+```
+
+*Note : Une future mise à jour permettra de passer le Middleware dans les options du routeur.*
+
 ---
 
 **Développé avec ❤️ par Bastivan Consulting**

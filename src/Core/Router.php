@@ -44,6 +44,11 @@ class Router
             if ($route['method'] === $method && preg_match($route['pattern'], $uri, $matches)) {
                 array_shift($matches); // Remove full match
 
+                // Security Check
+                if (isset($route['options']['security'])) {
+                    Middleware\SecurityMiddleware::checkRouteSecurity($route['options']['security']);
+                }
+
                 // Rate Limit
                 Middleware\RateLimitMiddleware::handle($uri);
 
