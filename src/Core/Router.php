@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Bastivan\UniversalApi\Core;
+use Bastivan\UniversalApi\Controllers\ErrorController;
 
 /**
  * Class Router
@@ -58,7 +59,8 @@ class Router
             }
         }
 
-        http_response_code(404);
-        echo "404 Not Found - Bastivan Consulting API";
+        // 404
+        $controller = new ErrorController();
+        $controller->notFound(['message' => "Route not found: $uri"]);
     }
 }
