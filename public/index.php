@@ -30,5 +30,11 @@ $router = new Router();
 $router->get('/', [HomeController::class, 'index']);
 $router->get('/status', [HomeController::class, 'status']);
 
+// Load Custom Hooks
+$hookRoutes = __DIR__ . '/../hook/routes.php';
+if (file_exists($hookRoutes)) {
+    require_once $hookRoutes;
+}
+
 // Dispatch
 $router->dispatch();
