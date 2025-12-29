@@ -60,4 +60,27 @@ class SecurityMiddleware
             $_SERVER['REMOTE_ADDR'] = trim($ips[0]);
         }
     }
+
+    /**
+     * Checks security options for a specific route.
+     *
+     * @param array $securityOptions
+     */
+    public static function checkRouteSecurity(array $securityOptions): void
+    {
+        // IP Access Control
+        if (isset($securityOptions['allowed_ips']) && is_array($securityOptions['allowed_ips'])) {
+            $allowedIps = $securityOptions['allowed_ips'];
+            $clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+            if (!in_array($clientIp, $allowedIps, true)) {
+                http_response_code(403);
+                // Using standard error controller handling via redirect or direct output would be better,
+                // but for now, we follow the established pattern in this file.
+                // However, we should try to render a nice error if possible, but keep it simple here.
+                echo "403 Forbidden - Access Denied by Route Policy - Bastivan Consulting";
+                exit;
+            }
+        }
+    }
 }

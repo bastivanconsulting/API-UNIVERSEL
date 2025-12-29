@@ -14,22 +14,23 @@ class Router
 {
     private array $routes = [];
 
-    public function get(string $path, callable|array $handler): void
+    public function get(string $path, callable|array $handler, array $options = []): void
     {
-        $this->add('GET', $path, $handler);
+        $this->add('GET', $path, $handler, $options);
     }
 
-    public function post(string $path, callable|array $handler): void
+    public function post(string $path, callable|array $handler, array $options = []): void
     {
-        $this->add('POST', $path, $handler);
+        $this->add('POST', $path, $handler, $options);
     }
 
-    private function add(string $method, string $path, callable|array $handler): void
+    private function add(string $method, string $path, callable|array $handler, array $options = []): void
     {
         $this->routes[] = [
             'method' => $method,
             'pattern' => '#^' . $path . '$#',
-            'handler' => $handler
+            'handler' => $handler,
+            'options' => $options
         ];
     }
 
@@ -41,6 +42,11 @@ class Router
         foreach ($this->routes as $route) {
             if ($route['method'] === $method && preg_match($route['pattern'], $uri, $matches)) {
                 array_shift($matches); // Remove full match
+
+                // Security Check
+                if (isset($route['options']['security'])) {
+                    Middleware\SecurityMiddleware::checkRouteSecurity($route['options']['security']);
+                }
 
                 // Rate Limit
                 Middleware\RateLimitMiddleware::handle($uri);
