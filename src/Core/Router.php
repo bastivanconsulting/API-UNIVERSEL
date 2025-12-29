@@ -51,6 +51,21 @@ class Router
                 // Rate Limit
                 Middleware\RateLimitMiddleware::handle($uri);
 
+                // Cache Check
+                $cacheEnabled = isset($route['options']['cache']) && is_int($route['options']['cache']);
+                if ($cacheEnabled) {
+                    $cachedResponse = Middleware\CacheMiddleware::check($uri);
+                    if ($cachedResponse) {
+                        http_response_code($cachedResponse['statusCode']);
+                        foreach ($cachedResponse['headers'] as $header) {
+                            header($header);
+                        }
+                        echo $cachedResponse['content'];
+                        return;
+                    }
+                    ob_start();
+                }
+
                 $handler = $route['handler'];
                 if (is_array($handler)) {
                     $controllerName = $handler[0];
@@ -59,6 +74,12 @@ class Router
                     call_user_func_array([$controller, $action], $matches);
                 } else {
                     call_user_func_array($handler, $matches);
+                }
+
+                if ($cacheEnabled) {
+                    $content = ob_get_contents();
+                    ob_end_flush();
+                    Middleware\CacheMiddleware::store($uri, $content, $route['options']['cache']);
                 }
                 return;
             }
