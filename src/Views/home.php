@@ -144,16 +144,7 @@
                     Elle offre une structure claire (MVC) tout en restant extrêmement flexible pour répondre aux besoins métiers spécifiques.
                 </p>
             </div>
-
-            <!-- Efficacité -->
-            <div class="card">
-                <h2>⚡ Efficacité</h2>
-                <p>
-                    Construite sur <strong>PHP 8.4+</strong>, cette API tire parti de la compilation JIT et des dernières optimisations du langage.
-                    L'architecture minimise l'empreinte mémoire et maximise le débit des requêtes.
-                </p>
-            </div>
-
+            
             <!-- Sécurité -->
             <div class="card">
                 <h2>🔒 Sécurité</h2>
