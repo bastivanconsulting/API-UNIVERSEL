@@ -21,7 +21,8 @@ class Debugger
         }
 
         $headers = getallheaders();
-        $bodySize = strlen((string)file_get_contents('php://input'));
+        $bodySize = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+        //$bodySize = strlen((string)file_get_contents('php://input'));
 
         return [
             'bastivan_debug' => [
