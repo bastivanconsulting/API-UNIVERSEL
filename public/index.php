@@ -9,6 +9,7 @@ use Bastivan\UniversalApi\Core\Bootstrap;
 use Bastivan\UniversalApi\Core\Router;
 use Bastivan\UniversalApi\Core\Debugger;
 use Bastivan\UniversalApi\Core\Middleware\SecurityMiddleware;
+use Bastivan\UniversalApi\Core\Middleware\BrandingMiddleware;
 use Bastivan\UniversalApi\Core\Middleware\GzipMiddleware;
 use Bastivan\UniversalApi\Controllers\HomeController;
 
@@ -22,6 +23,7 @@ Debugger::registerErrorHandler();
 
 // Run Middleware
 SecurityMiddleware::handle();
+BrandingMiddleware::handle();
 GzipMiddleware::handle();
 
 // Setup Routing
