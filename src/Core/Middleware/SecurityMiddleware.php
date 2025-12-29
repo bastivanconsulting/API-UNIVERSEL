@@ -59,7 +59,24 @@ class SecurityMiddleware
             $_SERVER['REMOTE_ADDR'] = trim($ips[0]);
         }
 
-        // 4. IP Access Control (Deny All / Whitelist)
+        // 4. HTTP Method Restriction (Surface Attack Reduction)
+        // Allows limiting allowed HTTP methods globally (e.g. GET, POST only).
+        // Default: Allow all standard methods.
+        $allowedMethodsRaw = Config::get('SECURITY_ALLOWED_METHODS', '');
+        if (!empty($allowedMethodsRaw)) {
+            $allowedMethods = array_map('trim', array_map('strtoupper', explode(',', $allowedMethodsRaw)));
+            $currentMethod = $_SERVER['REQUEST_METHOD'];
+
+            if (!in_array($currentMethod, $allowedMethods, true)) {
+                $controller = new ErrorController();
+                // 405 Method Not Allowed is more appropriate than 403, but 403 works for "Security Policy"
+                http_response_code(405);
+                $controller->forbidden(['message' => "Method $currentMethod not allowed by security policy."]);
+                exit;
+            }
+        }
+
+        // 5. IP Access Control (Deny All / Whitelist)
         $strategy = Config::get('SECURITY_ACCESS_STRATEGY', 'ALLOW_ALL');
 
         if ($strategy === 'WHITELIST') {

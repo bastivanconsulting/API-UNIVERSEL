@@ -83,6 +83,7 @@ Cette API implémente plusieurs couches de sécurité par défaut :
 *   **Prepared Statements** : Toutes les requêtes SQL utilisent `PDO::prepare`.
 *   **SecurityMiddleware** : Vérifie SSL et nettoie les headers.
 *   **RateLimitMiddleware** : Protège contre le brute-force.
+    *   **Restriction des Méthodes HTTP** : Réduction de la surface d'attaque en limitant les verbes autorisés (GET, POST, etc.).
 
 ## 🪝 Système de Hooks
 
@@ -119,7 +120,19 @@ $router->get('/admin/stats', [MyController::class, 'stats'], [
 ]);
 ```
 
-### 3. Créer des Routes avec Base de Données
+### 3. Limiter les types de méthodes HTTP (Surface d'Attaque)
+
+Pour réduire les risques, vous pouvez définir globalement les méthodes HTTP autorisées dans votre fichier `.env`. Toute méthode non listée sera rejetée avec une erreur 405.
+
+Dans `.env` :
+```ini
+# Autoriser uniquement GET et POST (Rejette PUT, DELETE, PATCH, etc.)
+SECURITY_ALLOWED_METHODS=GET,POST
+```
+
+Cela s'applique à l'ensemble de l'API. C'est idéal pour durcir une API qui ne fait que de la lecture (GET) ou de la soumission simple (POST).
+
+### 4. Créer des Routes avec Base de Données
 
 Utilisez la classe `Database` pour interagir avec MySQL/MariaDB ou PostgreSQL.
 
@@ -156,7 +169,7 @@ Dans `hook/routes.php` :
 $router->get('/users/([0-9]+)', [Bastivan\UniversalApi\Hook\Controllers\UserController::class, 'getUser']);
 ```
 
-### 4. Créer un Système d'Authentification (Token)
+### 5. Créer un Système d'Authentification (Token)
 
 Voici comment implémenter une authentification simple via Token sans toucher au Core.
 
