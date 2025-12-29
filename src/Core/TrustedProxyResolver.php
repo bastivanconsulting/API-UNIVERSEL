@@ -88,6 +88,11 @@ class TrustedProxyResolver
         // Filter and Unique
         $proxies = array_unique(array_filter($proxies, fn($ip) => !empty($ip)));
 
+        // Fallback if empty to prevent DoS loop
+        if (empty($proxies)) {
+             $proxies = ['0.0.0.0'];
+        }
+
         // Cache
         if (!empty($proxies)) {
              Cache::set(self::CACHE_KEY, json_encode(array_values($proxies)), self::CACHE_TTL);
@@ -96,10 +101,28 @@ class TrustedProxyResolver
         return self::mergeWithConfig($proxies);
     }
 
+    private static function fetchWithTimeout(string $url): ?string
+    {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 3, // 3 seconds timeout
+                'ignore_errors' => false,
+            ],
+            'ssl' => [
+                 'verify_peer' => true,
+                 'verify_peer_name' => true,
+            ]
+        ]);
+
+        $content = @file_get_contents($url, false, $context);
+
+        return $content !== false ? $content : null;
+    }
+
     private static function fetchList(string $url): array
     {
-        $content = @file_get_contents($url);
-        if ($content === false) {
+        $content = self::fetchWithTimeout($url);
+        if ($content === null) {
             return [];
         }
         // Split by newlines
@@ -108,8 +131,8 @@ class TrustedProxyResolver
 
     private static function fetchGcoreList(string $url): array
     {
-        $content = @file_get_contents($url);
-        if ($content === false) {
+        $content = self::fetchWithTimeout($url);
+        if ($content === null) {
             return [];
         }
 
