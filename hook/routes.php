@@ -19,3 +19,6 @@ $router->get('/custom', [CustomController::class, 'index'], ['cache' => true, 'c
 
 // Example of a non-cached route (e.g., authentication)
 // $router->post('/login', [AuthController::class, 'login'], ['cache' => false]);
+
+// Example: Get authenticated user details
+$router->get('/user/me', [Bastivan\UniversalApi\Hook\Controllers\UserController::class, 'me'], ['cache' => false]);

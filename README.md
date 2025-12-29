@@ -158,20 +158,26 @@ $router->get('/users/([0-9]+)', [Bastivan\UniversalApi\Hook\Controllers\UserCont
 
 ### 4. Créer un Système d'Authentification (Token)
 
-Voici comment implémenter une authentification simple via Token sans toucher au Core.
+Voici comment implémenter une authentification simple via Token sans toucher au Core, incluant la récupération de l'utilisateur connecté (Exemple `/user/me`).
 
-#### A. La Table SQL
-Créez une table `api_tokens` :
+#### A. Les Tables SQL
+Assurez-vous d'avoir une table `users` et une table `api_tokens` :
 ```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL
+);
+
 CREATE TABLE api_tokens (
     token VARCHAR(64) PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 #### B. Le Middleware d'Authentification
-Créez `hook/Middleware/AuthMiddleware.php` :
+Créez `hook/Middleware/AuthMiddleware.php`. Ce middleware vérifie le token et charge l'utilisateur courant.
 
 ```php
 <?php
@@ -182,6 +188,8 @@ use Bastivan\UniversalApi\Core\Database;
 
 class AuthMiddleware
 {
+    private static ?array $currentUser = null;
+
     public static function check(): void
     {
         $headers = getallheaders();
@@ -193,7 +201,6 @@ class AuthMiddleware
         if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
              $token = $matches[1];
         } else {
-             // Fallback: Use the whole header if no Bearer prefix (or handle as needed)
              $token = $authHeader ?: null;
         }
 
@@ -203,10 +210,26 @@ class AuthMiddleware
 
         $db = Database::getInstance();
         $stmt = $db->query("SELECT user_id FROM api_tokens WHERE token = ?", [$token]);
+        $tokenData = $stmt->fetch();
 
-        if (!$stmt->fetch()) {
+        if (!$tokenData) {
             self::abort();
         }
+
+        // Récupérer les infos utilisateur
+        $stmtUser = $db->query("SELECT id, name, email FROM users WHERE id = ?", [$tokenData['user_id']]);
+        $user = $stmtUser->fetch();
+
+        if (!$user) {
+            self::abort();
+        }
+
+        self::$currentUser = $user;
+    }
+
+    public static function user(): ?array
+    {
+        return self::$currentUser;
     }
 
     private static function abort(): void
@@ -219,24 +242,38 @@ class AuthMiddleware
 }
 ```
 
-#### C. Utilisation dans le Contrôleur
-Dans votre contrôleur (`hook/Controllers/SecureController.php`) :
+#### C. Exemple de Contrôleur Utilisateur (/user/me)
+Créez `hook/Controllers/UserController.php`. Ce contrôleur utilise le middleware pour protéger la route et renvoyer les données de l'utilisateur connecté.
 
 ```php
+<?php
+
 namespace Bastivan\UniversalApi\Hook\Controllers;
 
 use Bastivan\UniversalApi\Hook\Middleware\AuthMiddleware;
 
-class SecureController
+class UserController
 {
-    public function dashboard()
+    public function me()
     {
-        // Appeler le middleware manuellement au début de la méthode
+        // 1. Vérifier l'authentification (Arrête le script si invalide)
         AuthMiddleware::check();
 
-        echo json_encode(['message' => 'Bienvenue dans la zone sécurisée']);
+        // 2. Récupérer l'utilisateur connecté
+        $user = AuthMiddleware::user();
+
+        // 3. Renvoyer la réponse JSON
+        header('Content-Type: application/json');
+        echo json_encode($user);
     }
 }
+```
+
+#### D. Enregistrer la Route
+Dans `hook/routes.php` :
+
+```php
+$router->get('/user/me', [Bastivan\UniversalApi\Hook\Controllers\UserController::class, 'me'], ['cache' => false]);
 ```
 
 *Note : Une future mise à jour permettra de passer le Middleware dans les options du routeur.*
