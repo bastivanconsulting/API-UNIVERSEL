@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: universal-api
+  labels:
+    app: universal-api
+    vendor: bastivan-consulting
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: universal-api
+  template:
+    metadata:
+      labels:
+        app: universal-api
+    spec:
+      containers:
+      - name: universal-api
+        image: bastivan-consulting/universal-api:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: CONFIG_S3_BUCKET
+          value: "my-config-bucket"
+        - name: CONFIG_S3_KEY
+          value: "prod-config.json"
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+        # Secrets should be handled via K8s Secrets, simplified here
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
