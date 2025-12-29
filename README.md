@@ -37,7 +37,7 @@ Ce projet fournit une base robuste, sécurisée et extensible pour des APIs mode
 C'est la méthode recommandée pour le développement.
 
 ```bash
-git clone <repo_url>
+git clone git@github.com:bastivanconsulting/TLB-APPS.git
 cd universal-api
 docker-compose up -d --build
 ```
