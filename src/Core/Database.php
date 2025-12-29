@@ -21,12 +21,12 @@ class Database
 
     private function __construct()
     {
-        $driver = Config::get('DB_CONNECTION', 'pgsql'); // pgsql or mysql (for MariaDB)
-        $host = Config::get('DB_HOST', '127.0.0.1');
-        $port = Config::get('DB_PORT', '5432');
-        $database = Config::get('DB_DATABASE', 'universal_api');
-        $username = Config::get('DB_USERNAME', 'root');
-        $password = Config::get('DB_PASSWORD', '');
+        $driver = Config::get('DB_CONNECTION');
+        $host = Config::get('DB_HOST');
+        $port = Config::get('DB_PORT');
+        $database = Config::get('DB_DATABASE');
+        $username = Config::get('DB_USERNAME');
+        $password = Config::get('DB_PASSWORD');
 
         $dsn = "$driver:host=$host;port=$port;dbname=$database";
         if ($driver === 'mysql') {
