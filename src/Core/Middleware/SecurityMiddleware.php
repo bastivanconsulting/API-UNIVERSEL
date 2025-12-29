@@ -22,9 +22,12 @@ class SecurityMiddleware
         // But the requirement says "SSL Certificate Mandatory, No HTTP".
 
         $isHttps = false;
+        $actualRemoteIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $isTrustedProxy = \Bastivan\UniversalApi\Core\TrustedProxyResolver::isTrusted($actualRemoteIp);
+
         if ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443) {
             $isHttps = true;
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+        } elseif ($isTrustedProxy && !empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
             $isHttps = true;
         }
 
