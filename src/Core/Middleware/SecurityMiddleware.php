@@ -58,5 +58,34 @@ class SecurityMiddleware
             $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
             $_SERVER['REMOTE_ADDR'] = trim($ips[0]);
         }
+
+        // 4. IP Access Control (Deny All / Whitelist)
+        $strategy = Config::get('SECURITY_ACCESS_STRATEGY', 'ALLOW_ALL');
+
+        if ($strategy === 'WHITELIST') {
+            $allowedIpsRaw = Config::get('SECURITY_ALLOWED_IPS', '');
+            $allowedIps = array_filter(array_map('trim', explode(',', $allowedIpsRaw)));
+            $clientIp = $_SERVER['REMOTE_ADDR'];
+
+            $isAllowed = false;
+
+            // Simple exact match check
+            if (in_array($clientIp, $allowedIps, true)) {
+                $isAllowed = true;
+            }
+
+            // If we want to support CIDR later, we would add that logic here.
+
+            if (!$isAllowed) {
+                // If the list is empty and strategy is WHITELIST, we effectively deny everyone.
+                // But usually localhost might be implicitly allowed or explicitly required in the list.
+                // We adhere to strict "Deny all except custom IPs".
+
+                $controller = new ErrorController();
+                $controller->forbidden(['message' => 'Access denied by security policy.']);
+                // forbidden() method likely exits the script
+                exit;
+            }
+        }
     }
 }
