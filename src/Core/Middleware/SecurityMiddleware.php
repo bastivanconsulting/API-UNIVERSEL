@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bastivan\UniversalApi\Core\Middleware;
 
 use Bastivan\UniversalApi\Core\Config;
+use Bastivan\UniversalApi\Controllers\ErrorController;
 
 /**
  * Class SecurityMiddleware
@@ -30,9 +31,8 @@ class SecurityMiddleware
         // If strict SSL is enforced and we are not on HTTPS, we should block or redirect.
         // For an API, blocking with 403 Forbidden or 426 Upgrade Required is often better than redirecting POSTs.
         if (Config::get('APP_ENV') === 'production' && !$isHttps) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Bastivan Consulting API: HTTPS is required.']);
-            exit;
+            $controller = new ErrorController();
+            $controller->forbidden(['message' => 'HTTPS is required.']);
         }
 
         // 2. Block Legacy SSL/TLS (Best effort application level check)
@@ -40,9 +40,8 @@ class SecurityMiddleware
         if (isset($_SERVER['SSL_PROTOCOL'])) {
             $protocol = $_SERVER['SSL_PROTOCOL'];
             if (preg_match('/(SSLv3|TLSv1\.0|TLSv1\.1)/', $protocol)) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Bastivan Consulting API: TLS 1.2+ is required.']);
-                exit;
+                $controller = new ErrorController();
+                $controller->forbidden(['message' => 'TLS 1.2+ is required.']);
             }
         }
 
@@ -58,6 +57,35 @@ class SecurityMiddleware
             // Standard Proxy - Take the first IP in the list
             $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
             $_SERVER['REMOTE_ADDR'] = trim($ips[0]);
+        }
+
+        // 4. IP Access Control (Deny All / Whitelist)
+        $strategy = Config::get('SECURITY_ACCESS_STRATEGY', 'ALLOW_ALL');
+
+        if ($strategy === 'WHITELIST') {
+            $allowedIpsRaw = Config::get('SECURITY_ALLOWED_IPS', '');
+            $allowedIps = array_filter(array_map('trim', explode(',', $allowedIpsRaw)));
+            $clientIp = $_SERVER['REMOTE_ADDR'];
+
+            $isAllowed = false;
+
+            // Simple exact match check
+            if (in_array($clientIp, $allowedIps, true)) {
+                $isAllowed = true;
+            }
+
+            // If we want to support CIDR later, we would add that logic here.
+
+            if (!$isAllowed) {
+                // If the list is empty and strategy is WHITELIST, we effectively deny everyone.
+                // But usually localhost might be implicitly allowed or explicitly required in the list.
+                // We adhere to strict "Deny all except custom IPs".
+
+                $controller = new ErrorController();
+                $controller->forbidden(['message' => 'Access denied by security policy.']);
+                // forbidden() method likely exits the script
+                exit;
+            }
         }
     }
 
