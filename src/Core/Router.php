@@ -13,7 +13,8 @@ use Bastivan\UniversalApi\Controllers\ErrorController;
  */
 class Router
 {
-    private array $routes = [];
+    private array $staticRoutes = [];
+    private array $dynamicRoutes = [];
 
     public function get(string $path, callable|array $handler, array $options = []): void
     {
@@ -27,12 +28,23 @@ class Router
 
     private function add(string $method, string $path, callable|array $handler, array $options = []): void
     {
-        $this->routes[] = [
-            'method' => $method,
-            'pattern' => '#^' . $path . '$#',
-            'handler' => $handler,
-            'options' => $options
-        ];
+        // Simple heuristic to detect regex: look for characters used in patterns.
+        // If it contains (, [, *, +, ? it is likely a regex.
+        // We include '{' because it can be used for quantifiers.
+        // We treat '.' as a literal if no other regex chars are present,
+        // effectively making static routes strict string matches.
+        if (preg_match('/[\[\(\*\+\?\{\\\\]/', $path)) {
+            $this->dynamicRoutes[$method][] = [
+                'pattern' => '#^' . $path . '$#',
+                'handler' => $handler,
+                'options' => $options
+            ];
+        } else {
+            $this->staticRoutes[$method][$path] = [
+                'handler' => $handler,
+                'options' => $options
+            ];
+        }
     }
 
     public function dispatch(): void
@@ -40,107 +52,129 @@ class Router
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $method = $_SERVER['REQUEST_METHOD'];
 
-        foreach ($this->routes as $route) {
-            if ($route['method'] === $method && preg_match($route['pattern'], $uri, $matches)) {
-                array_shift($matches); // Remove full match
+        $route = null;
+        $matches = [];
 
-                // Security Check
-                if (isset($route['options']['security'])) {
-                    Middleware\SecurityMiddleware::checkRouteSecurity($route['options']['security']);
-                }
-
-                // Rate Limit
-                Middleware\RateLimitMiddleware::handle($uri);
-
-                // Custom Middleware
-                if (isset($route['options']['middleware']) && is_array($route['options']['middleware'])) {
-                    foreach ($route['options']['middleware'] as $middleware) {
-                        if (class_exists($middleware) && method_exists($middleware, 'handle')) {
-                            $middleware::handle($uri);
-                        }
+        // 1. Check Static Routes (O(1))
+        if (isset($this->staticRoutes[$method][$uri])) {
+            $route = $this->staticRoutes[$method][$uri];
+            // Matches is empty for static routes
+        }
+        // 2. Check Dynamic Routes (O(N) of dynamic routes only)
+        else {
+            if (isset($this->dynamicRoutes[$method])) {
+                foreach ($this->dynamicRoutes[$method] as $dynamicRoute) {
+                    if (preg_match($dynamicRoute['pattern'], $uri, $m)) {
+                        $route = $dynamicRoute;
+                        $matches = $m;
+                        array_shift($matches); // Remove full match
+                        break;
                     }
                 }
-
-                // Check Cache
-                $cacheEnabled = $route['options']['cache'] ?? false;
-                $cacheTTL = (int)($route['options']['cache_ttl'] ?? 3600);
-                $cacheKey = 'route_cache:' . md5($method . $uri);
-
-                if ($cacheEnabled) {
-                    try {
-                        $cachedData = Cache::get($cacheKey);
-                        if ($cachedData !== null) {
-                            $response = json_decode($cachedData, true);
-                            if (json_last_error() === JSON_ERROR_NONE && isset($response['body'])) {
-                                // Replay Status Code
-                                if (isset($response['code'])) {
-                                    http_response_code($response['code']);
-                                }
-                                // Replay Headers
-                                if (isset($response['headers']) && is_array($response['headers'])) {
-                                    foreach ($response['headers'] as $header) {
-                                        header($header);
-                                    }
-                                }
-                                echo $response['body'];
-                                return;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        // Proceed without cache on error
-                    }
-                }
-
-                if ($cacheEnabled) {
-                    ob_start();
-                }
-
-                try {
-                    $handler = $route['handler'];
-                    if (is_array($handler)) {
-                        $controllerName = $handler[0];
-                        $action = $handler[1];
-                        $controller = new $controllerName();
-                        call_user_func_array([$controller, $action], $matches);
-                    } else {
-                        call_user_func_array($handler, $matches);
-                    }
-                } catch (\Throwable $e) {
-                    if ($cacheEnabled) {
-                        ob_end_clean(); // Discard buffer on error
-                    }
-                    throw $e; // Re-throw
-                }
-
-                if ($cacheEnabled) {
-                    $content = ob_get_clean();
-                    if ($content !== false) {
-                        try {
-                            $headers = headers_list();
-                            $code = http_response_code();
-
-                            $cachePayload = json_encode([
-                                'code' => $code,
-                                'headers' => $headers,
-                                'body' => $content
-                            ]);
-
-                            if ($cachePayload !== false) {
-                                Cache::set($cacheKey, $cachePayload, $cacheTTL);
-                            }
-                        } catch (\Exception $e) {
-                            // Ignore cache write errors
-                        }
-                        echo $content;
-                    }
-                }
-
-                return;
             }
+        }
+
+        if ($route) {
+            $this->handleRoute($route, $matches, $uri, $method);
+            return;
         }
 
         // 404
         $controller = new ErrorController();
         $controller->notFound(['message' => "Route not found: $uri"]);
+    }
+
+    private function handleRoute(array $route, array $matches, string $uri, string $method): void
+    {
+        // Security Check
+        if (isset($route['options']['security'])) {
+            Middleware\SecurityMiddleware::checkRouteSecurity($route['options']['security']);
+        }
+
+        // Rate Limit
+        Middleware\RateLimitMiddleware::handle($uri);
+
+        // Custom Middleware
+        if (isset($route['options']['middleware']) && is_array($route['options']['middleware'])) {
+            foreach ($route['options']['middleware'] as $middleware) {
+                if (class_exists($middleware) && method_exists($middleware, 'handle')) {
+                    $middleware::handle($uri);
+                }
+            }
+        }
+
+        // Check Cache
+        $cacheEnabled = $route['options']['cache'] ?? false;
+        $cacheTTL = (int)($route['options']['cache_ttl'] ?? 3600);
+        $cacheKey = 'route_cache:' . md5($method . $uri);
+
+        if ($cacheEnabled) {
+            try {
+                $cachedData = Cache::get($cacheKey);
+                if ($cachedData !== null) {
+                    $response = json_decode($cachedData, true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($response['body'])) {
+                        // Replay Status Code
+                        if (isset($response['code'])) {
+                            http_response_code($response['code']);
+                        }
+                        // Replay Headers
+                        if (isset($response['headers']) && is_array($response['headers'])) {
+                            foreach ($response['headers'] as $header) {
+                                header($header);
+                            }
+                        }
+                        echo $response['body'];
+                        return;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Proceed without cache on error
+            }
+        }
+
+        if ($cacheEnabled) {
+            ob_start();
+        }
+
+        try {
+            $handler = $route['handler'];
+            if (is_array($handler)) {
+                $controllerName = $handler[0];
+                $action = $handler[1];
+                $controller = new $controllerName();
+                call_user_func_array([$controller, $action], $matches);
+            } else {
+                call_user_func_array($handler, $matches);
+            }
+        } catch (\Throwable $e) {
+            if ($cacheEnabled) {
+                ob_end_clean(); // Discard buffer on error
+            }
+            throw $e; // Re-throw
+        }
+
+        if ($cacheEnabled) {
+            $content = ob_get_clean();
+            if ($content !== false) {
+                try {
+                    $headers = headers_list();
+                    $code = http_response_code();
+
+                    $cachePayload = json_encode([
+                        'code' => $code,
+                        'headers' => $headers,
+                        'body' => $content
+                    ]);
+
+                    if ($cachePayload !== false) {
+                        Cache::set($cacheKey, $cachePayload, $cacheTTL);
+                    }
+                } catch (\Exception $e) {
+                    // Ignore cache write errors
+                }
+                echo $content;
+            }
+        }
     }
 }
