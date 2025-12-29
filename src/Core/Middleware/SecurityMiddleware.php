@@ -120,10 +120,19 @@ class SecurityMiddleware
 
             if (!in_array($clientIp, $allowedIps, true)) {
                 http_response_code(403);
-                // Using standard error controller handling via redirect or direct output would be better,
-                // but for now, we follow the established pattern in this file.
-                // However, we should try to render a nice error if possible, but keep it simple here.
                 echo "403 Forbidden - Access Denied by Route Policy - Bastivan Consulting";
+                exit;
+            }
+        }
+
+        // HTTP Method Restriction
+        if (isset($securityOptions['allowed_methods']) && is_array($securityOptions['allowed_methods'])) {
+            $allowedMethods = array_map('strtoupper', $securityOptions['allowed_methods']);
+            $currentMethod = $_SERVER['REQUEST_METHOD'];
+
+            if (!in_array($currentMethod, $allowedMethods, true)) {
+                http_response_code(405);
+                echo "405 Method Not Allowed - Allowed: " . implode(', ', $allowedMethods) . " - Bastivan Consulting";
                 exit;
             }
         }

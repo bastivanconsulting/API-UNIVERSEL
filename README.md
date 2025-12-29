@@ -83,7 +83,7 @@ Cette API implémente plusieurs couches de sécurité par défaut :
 *   **Prepared Statements** : Toutes les requêtes SQL utilisent `PDO::prepare`.
 *   **SecurityMiddleware** : Vérifie SSL et nettoie les headers.
 *   **RateLimitMiddleware** : Protège contre le brute-force.
-    *   **Restriction des Méthodes HTTP** : Réduction de la surface d'attaque en limitant les verbes autorisés (GET, POST, etc.).
+    *   **Restriction des Méthodes HTTP** : Réduction de la surface d'attaque en limitant les verbes autorisés (GET, POST, PUT, DELETE, PATCH).
 
 ## 🪝 Système de Hooks
 
@@ -122,15 +122,32 @@ $router->get('/admin/stats', [MyController::class, 'stats'], [
 
 ### 3. Limiter les types de méthodes HTTP (Surface d'Attaque)
 
-Pour réduire les risques, vous pouvez définir globalement les méthodes HTTP autorisées dans votre fichier `.env`. Toute méthode non listée sera rejetée avec une erreur 405.
+L'API supporte les méthodes `GET`, `POST`, `PUT`, `DELETE` et `PATCH`.
 
+Vous pouvez restreindre les méthodes autorisées globalement via `.env` ou spécifiquement par route.
+
+#### Restriction Globale
 Dans `.env` :
 ```ini
 # Autoriser uniquement GET et POST (Rejette PUT, DELETE, PATCH, etc.)
 SECURITY_ALLOWED_METHODS=GET,POST
 ```
 
-Cela s'applique à l'ensemble de l'API. C'est idéal pour durcir une API qui ne fait que de la lecture (GET) ou de la soumission simple (POST).
+#### Restriction par Route
+Vous pouvez renforcer la sécurité en définissant explicitement les méthodes autorisées pour une route donnée via les options de sécurité.
+
+```php
+// Exemple : '/custom' accepte uniquement GET.
+// Si une requête POST arrive sur cette route (même si définie ailleurs), elle sera rejetée par la politique de sécurité avec une erreur 405.
+$router->get('/custom', [MyController::class, 'index'], [
+    'security' => [
+        'allowed_methods' => ['GET']
+    ]
+]);
+
+// Exemple pour PUT
+$router->put('/users/update', [MyController::class, 'update']);
+```
 
 ### 4. Créer des Routes avec Base de Données
 

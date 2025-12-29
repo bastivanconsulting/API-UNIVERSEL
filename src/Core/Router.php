@@ -25,6 +25,21 @@ class Router
         $this->add('POST', $path, $handler, $options);
     }
 
+    public function put(string $path, callable|array $handler, array $options = []): void
+    {
+        $this->add('PUT', $path, $handler, $options);
+    }
+
+    public function delete(string $path, callable|array $handler, array $options = []): void
+    {
+        $this->add('DELETE', $path, $handler, $options);
+    }
+
+    public function patch(string $path, callable|array $handler, array $options = []): void
+    {
+        $this->add('PATCH', $path, $handler, $options);
+    }
+
     private function add(string $method, string $path, callable|array $handler, array $options = []): void
     {
         $this->routes[] = [
