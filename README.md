@@ -13,13 +13,16 @@ Ce projet fournit une base robuste, sécurisée et extensible pour des APIs mode
     *   Support natif Docker & Kubernetes.
 *   **Performance** :
     *   Support GZIP natif.
-    *   Cache Redis intégré.
+    *   Cache Redis intégré (Body, Headers, Status) avec support Auth/Cookie.
     *   Support des bases de données MariaDB et PostgreSQL (via PDO optimisé).
+    *   Optimisation des routes statiques (O(1)).
 *   **Sécurité & Réseau** :
-    *   **CDN Ready** : Support complet Cloudflare, Gcore et Proxy Nginx.
+    *   **CDN Ready** : Support complet Cloudflare, Gcore et Proxy Nginx (Trusted Proxy Resolver).
     *   Détection réelle des IPs clients.
     *   SSL/TLS Obligatoire (Bloque HTTP et vieux TLS).
+    *   Protection CSRF pour les requêtes avec Cookies.
     *   Rate Limiting (Redis).
+    *   Headers de sécurité stricts (HSTS, CSP, X-Content-Type-Options).
 *   **Mode Debug Complet** :
     *   Analyse détaillée (Taille des paquets, OS, IP, Memory, etc.).
 
@@ -66,6 +69,8 @@ La configuration se fait via le fichier `.env` pour le local, ou via un fichier 
 | `DB_CONNECTION` | `mysql` ou `pgsql` |
 | `LOG_DRIVER` | `local` ou `s3` |
 | `CONFIG_S3_BUCKET` | Bucket S3 pour la config HA |
+| `SECURITY_ALLOWED_METHODS` | Restrictions globales des méthodes (ex: `GET,POST`) |
+| `SECURITY_ACCESS_STRATEGY` | `ALLOW_ALL` ou `WHITELIST` |
 
 ## 📦 Structure du Code
 
@@ -81,7 +86,7 @@ Le code est structuré selon le pattern MVC, développé par **Bastivan Consulti
 
 Cette API implémente plusieurs couches de sécurité par défaut :
 *   **Prepared Statements** : Toutes les requêtes SQL utilisent `PDO::prepare`.
-*   **SecurityMiddleware** : Vérifie SSL et nettoie les headers.
+*   **SecurityMiddleware** : Vérifie SSL, nettoie les headers, protège contre le CSRF et valide les IPs (Cloudflare/Gcore).
 *   **RateLimitMiddleware** : Protège contre le brute-force.
     *   **Restriction des Méthodes HTTP** : Réduction de la surface d'attaque en limitant les verbes autorisés (GET, POST, PUT, DELETE, PATCH).
 
@@ -188,7 +193,7 @@ $router->get('/users/([0-9]+)', [Bastivan\UniversalApi\Hook\Controllers\UserCont
 
 ### 5. Créer un Système d'Authentification (Token)
 
-Voici comment implémenter une authentification simple via Token sans toucher au Core.
+Voici comment implémenter une authentification simple via Token sans toucher au Core, en utilisant le support Middleware du Router.
 
 #### A. La Table SQL
 Créez une table `api_tokens` :
@@ -201,7 +206,7 @@ CREATE TABLE api_tokens (
 ```
 
 #### B. Le Middleware d'Authentification
-Créez `hook/Middleware/AuthMiddleware.php` :
+Créez `hook/Middleware/AuthMiddleware.php`. Le middleware doit implémenter une méthode statique `handle`.
 
 ```php
 <?php
@@ -212,7 +217,11 @@ use Bastivan\UniversalApi\Core\Database;
 
 class AuthMiddleware
 {
-    public static function check(): void
+    /**
+     * Intercepte la requête et valide le token.
+     * @param string $uri L'URI demandée (ex: /secure/dashboard)
+     */
+    public static function handle(string $uri): void
     {
         $headers = getallheaders();
         $token = null;
@@ -223,7 +232,7 @@ class AuthMiddleware
         if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
              $token = $matches[1];
         } else {
-             // Fallback: Use the whole header if no Bearer prefix (or handle as needed)
+             // Fallback: Use the whole header if no Bearer prefix
              $token = $authHeader ?: null;
         }
 
@@ -237,6 +246,8 @@ class AuthMiddleware
         if (!$stmt->fetch()) {
             self::abort();
         }
+
+        // Si tout est OK, le code continue vers le contrôleur
     }
 
     private static function abort(): void
@@ -249,27 +260,34 @@ class AuthMiddleware
 }
 ```
 
-#### C. Utilisation dans le Contrôleur
-Dans votre contrôleur (`hook/Controllers/SecureController.php`) :
+#### C. Utilisation dans `hook/routes.php`
+Déclarez le middleware dans le tableau d'options de la route (3ème argument).
+
+```php
+use Bastivan\UniversalApi\Hook\Controllers\SecureController;
+use Bastivan\UniversalApi\Hook\Middleware\AuthMiddleware;
+
+// Le middleware AuthMiddleware::handle() sera exécuté avant SecureController::dashboard
+$router->get('/secure/dashboard', [SecureController::class, 'dashboard'], [
+    'middleware' => [AuthMiddleware::class]
+]);
+```
+
+#### D. Le Contrôleur
+Dans votre contrôleur (`hook/Controllers/SecureController.php`), vous n'avez plus besoin d'appeler le middleware manuellement.
 
 ```php
 namespace Bastivan\UniversalApi\Hook\Controllers;
-
-use Bastivan\UniversalApi\Hook\Middleware\AuthMiddleware;
 
 class SecureController
 {
     public function dashboard()
     {
-        // Appeler le middleware manuellement au début de la méthode
-        AuthMiddleware::check();
-
+        // Le code ici n'est atteint que si AuthMiddleware a validé le token
         echo json_encode(['message' => 'Bienvenue dans la zone sécurisée']);
     }
 }
 ```
-
-*Note : Une future mise à jour permettra de passer le Middleware dans les options du routeur.*
 
 ---
 
