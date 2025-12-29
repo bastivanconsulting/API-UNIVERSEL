@@ -52,6 +52,15 @@ class Router
                 // Rate Limit
                 Middleware\RateLimitMiddleware::handle($uri);
 
+                // Custom Middleware
+                if (isset($route['options']['middleware']) && is_array($route['options']['middleware'])) {
+                    foreach ($route['options']['middleware'] as $middleware) {
+                        if (class_exists($middleware) && method_exists($middleware, 'handle')) {
+                            $middleware::handle($uri);
+                        }
+                    }
+                }
+
                 // Check Cache
                 $cacheEnabled = $route['options']['cache'] ?? false;
                 $cacheTTL = (int)($route['options']['cache_ttl'] ?? 3600);
