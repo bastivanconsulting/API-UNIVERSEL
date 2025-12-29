@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bastivan\UniversalApi\Core\Middleware;
 
 use Bastivan\UniversalApi\Core\Config;
+use Bastivan\UniversalApi\Controllers\ErrorController;
 
 /**
  * Class SecurityMiddleware
@@ -30,9 +31,8 @@ class SecurityMiddleware
         // If strict SSL is enforced and we are not on HTTPS, we should block or redirect.
         // For an API, blocking with 403 Forbidden or 426 Upgrade Required is often better than redirecting POSTs.
         if (Config::get('APP_ENV') === 'production' && !$isHttps) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Bastivan Consulting API: HTTPS is required.']);
-            exit;
+            $controller = new ErrorController();
+            $controller->forbidden(['message' => 'HTTPS is required.']);
         }
 
         // 2. Block Legacy SSL/TLS (Best effort application level check)
@@ -40,9 +40,8 @@ class SecurityMiddleware
         if (isset($_SERVER['SSL_PROTOCOL'])) {
             $protocol = $_SERVER['SSL_PROTOCOL'];
             if (preg_match('/(SSLv3|TLSv1\.0|TLSv1\.1)/', $protocol)) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Bastivan Consulting API: TLS 1.2+ is required.']);
-                exit;
+                $controller = new ErrorController();
+                $controller->forbidden(['message' => 'TLS 1.2+ is required.']);
             }
         }
 
