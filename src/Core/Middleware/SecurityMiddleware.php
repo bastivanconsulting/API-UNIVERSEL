@@ -83,7 +83,66 @@ class SecurityMiddleware
             }
         }
 
-        // 5. IP Access Control (Deny All / Whitelist)
+        // 5. CSRF Protection (Origin / Referer Check)
+        // Since CacheMiddleware adds support for Cookies in cache keys, and custom Auth might use Cookies,
+        // we must protect against CSRF for state-changing methods when Cookies are present.
+        if (isset($_SERVER['HTTP_COOKIE']) && !empty($_SERVER['HTTP_COOKIE'])) {
+            $method = $_SERVER['REQUEST_METHOD'];
+            $unsafeMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+
+            if (in_array($method, $unsafeMethods, true)) {
+                $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+                $referer = $_SERVER['HTTP_REFERER'] ?? null;
+
+                // Determine Target Origin
+                // Re-evaluate HTTPS status to be safe within this block context
+                $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443;
+
+                // Rely on the locally calculated $isSecure to avoid undefined variable issues
+                $scheme = $isSecure ? 'https' : 'http';
+                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $targetOrigin = $scheme . '://' . $host;
+
+                // Trusted Origins (Configurable)
+                $trustedOriginsRaw = Config::get('CSRF_TRUSTED_ORIGINS', '');
+                // Normalize config: trim and remove trailing slashes
+                $trustedOrigins = array_filter(array_map(function($url) {
+                    return rtrim(trim($url), '/');
+                }, explode(',', $trustedOriginsRaw)));
+
+                $trustedOrigins[] = $targetOrigin; // Always trust self
+
+                $isCsrfSafe = false;
+
+                // Check Origin
+                if ($origin) {
+                    // Origin usually includes scheme and host (and port)
+                    if (in_array($origin, $trustedOrigins, true)) {
+                        $isCsrfSafe = true;
+                    }
+                }
+                // Fallback to Referer if Origin is missing
+                elseif ($referer) {
+                    foreach ($trustedOrigins as $trusted) {
+                        // Secure Check: Ensure referer matches trusted origin exactly or starts with trusted origin followed by '/'
+                        // Using strncmp for PHP < 8.0 compatibility instead of str_starts_with
+                        $trustedSlash = $trusted . '/';
+                        if ($referer === $trusted || strncmp($referer, $trustedSlash, strlen($trustedSlash)) === 0) {
+                            $isCsrfSafe = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!$isCsrfSafe) {
+                    $controller = new ErrorController();
+                    $controller->forbidden(['message' => 'CSRF verification failed. Invalid Origin or Referer.']);
+                    exit;
+                }
+            }
+        }
+
+        // 6. IP Access Control (Deny All / Whitelist)
         $strategy = Config::get('SECURITY_ACCESS_STRATEGY', 'ALLOW_ALL');
 
         if ($strategy === 'WHITELIST') {
