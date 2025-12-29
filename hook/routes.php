@@ -14,4 +14,8 @@ use Bastivan\UniversalApi\Core\Router;
 
 use Bastivan\UniversalApi\Hook\Controllers\CustomController;
 
-$router->get('/custom', [CustomController::class, 'index']);
+// Example of a cached route
+$router->get('/custom', [CustomController::class, 'index'], ['cache' => true, 'cache_ttl' => 600]);
+
+// Example of a non-cached route (e.g., authentication)
+// $router->post('/login', [AuthController::class, 'login'], ['cache' => false]);
