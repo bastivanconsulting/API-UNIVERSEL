@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: universal-api-app
+    restart: unless-stopped
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_DATABASE: universal_api
+      DB_USERNAME: bastivan
+      DB_PASSWORD: password
+      REDIS_HOST: redis
+    networks:
+      - bastivan-net
+    volumes:
+      - .:/var/www/html
+
+  web:
+    image: nginx:alpine
+    container_name: universal-api-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/certs:/etc/nginx/certs
+      - .:/var/www/html
+    depends_on:
+      - app
+    networks:
+      - bastivan-net
+
+  db:
+    image: mariadb:10.6
+    container_name: universal-api-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: universal_api
+      MYSQL_USER: bastivan
+      MYSQL_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - bastivan-net
+
+  redis:
+    image: redis:alpine
+    container_name: universal-api-redis
+    restart: always
+    networks:
+      - bastivan-net
+
+networks:
+  bastivan-net:
+    driver: bridge
+
+volumes:
+  db_data:
