@@ -7,12 +7,6 @@ namespace Bastivan\UniversalApi\Core;
 use Monolog\Logger as MonoLogger;
 use Monolog\Handler\StreamHandler;
 use Aws\S3\S3Client;
-use Monolog\Handler\BufferHandler;
-// Note: Direct S3 Handler for Monolog might need a custom handler or specific package,
-// but for simplicity we will simulate local logging or assume a mounted S3 volume (via fuse)
-// or implement a simple custom pusher if needed.
-// However, the best practice for S3 logs in K8s is writing to stdout/file and having a sidecar (Fluentd) push to S3.
-// To satisfy "Storage on S3 or Local" directly in PHP:
 
 /**
  * Class Logger
@@ -27,13 +21,18 @@ class Logger
         if (self::$logger === null) {
             self::$logger = new MonoLogger('bastivan_api');
 
-            $logDriver = Config::get('LOG_DRIVER', 'local'); // 'local' or 's3' (via stream wrapper)
+            $logDriver = Config::get('LOG_DRIVER', 'local');
 
             if ($logDriver === 'local') {
                 $path = __DIR__ . '/../../logs/app.log';
+                // Ensure directory exists
+                if (!is_dir(dirname($path))) {
+                    mkdir(dirname($path), 0777, true);
+                }
                 self::$logger->pushHandler(new StreamHandler($path, MonoLogger::DEBUG));
+                // Also push to stdout for Docker/CLI
+                self::$logger->pushHandler(new StreamHandler('php://stdout', MonoLogger::DEBUG));
             } elseif ($logDriver === 's3') {
-                // Register S3 Stream Wrapper
                 $client = new S3Client([
                     'version' => 'latest',
                     'region'  => Config::get('AWS_DEFAULT_REGION'),
@@ -57,5 +56,25 @@ class Logger
     {
         if (self::$logger === null) self::init();
         self::$logger->log($level, $message, $context);
+    }
+
+    public static function info(string $message, array $context = []): void
+    {
+        self::log('info', $message, $context);
+    }
+
+    public static function error(string $message, array $context = []): void
+    {
+        self::log('error', $message, $context);
+    }
+
+    public static function debug(string $message, array $context = []): void
+    {
+        self::log('debug', $message, $context);
+    }
+
+    public static function warning(string $message, array $context = []): void
+    {
+        self::log('warning', $message, $context);
     }
 }
