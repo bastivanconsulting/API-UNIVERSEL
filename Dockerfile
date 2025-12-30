@@ -16,11 +16,11 @@ RUN apk add --no-cache \
 # Install PHP Extensions
 RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql zip opcache intl
 
-# Install Redis
-RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del pcre-dev $PHPIZE_DEPS
+# Install Redis and MongoDB
+RUN apk add --no-cache pcre-dev openssl-dev $PHPIZE_DEPS \
+    && pecl install redis mongodb \
+    && docker-php-ext-enable redis mongodb \
+    && apk del pcre-dev openssl-dev $PHPIZE_DEPS
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
