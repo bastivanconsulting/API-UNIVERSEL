@@ -21,22 +21,33 @@ class HomeController
 
     public function status(): void
     {
-        header('Content-Type: application/json');
+        $dbStatus = 'ok';
+        $redisStatus = 'ok';
+        $httpCode = 200;
 
-        $response = [
-            'status' => 'ok',
-            'app' => 'Universal API',
-            'developer' => 'Bastivan Consulting',
-            'version' => '1.0.0'
-        ];
-
-        if (filter_var(Config::get('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN)) {
-            $response = array_merge($response, Debugger::collect());
-            if (!empty($GLOBALS['BASTIVAN_DEBUG_ERRORS'])) {
-                $response['errors'] = $GLOBALS['BASTIVAN_DEBUG_ERRORS'];
-            }
+        try {
+            \Bastivan\UniversalApi\Core\Database::getInstance()->getConnection()->query('SELECT 1');
+        } catch (\Exception $e) {
+            $dbStatus = 'error';
+            $httpCode = 503;
         }
 
-        echo json_encode($response);
+        try {
+            \Bastivan\UniversalApi\Core\Cache::getClient()->ping();
+        } catch (\Exception $e) {
+            $redisStatus = 'error';
+            $httpCode = 503; // Service Unavailable
+        }
+
+        http_response_code($httpCode);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status' => $httpCode === 200 ? 'ok' : 'degraded',
+            'dependencies' => [
+                'database' => $dbStatus,
+                'redis' => $redisStatus
+            ],
+            'version' => '1.0.0'
+        ]);
     }
 }
