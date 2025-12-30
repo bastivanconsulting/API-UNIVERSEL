@@ -6,6 +6,7 @@ namespace Bastivan\UniversalApi\Controllers;
 
 use Bastivan\UniversalApi\Core\Debugger;
 use Bastivan\UniversalApi\Core\Config;
+use Bastivan\UniversalApi\Core\Database;
 
 /**
  * Class HomeController
@@ -26,7 +27,17 @@ class HomeController
         $httpCode = 200;
 
         try {
-            \Bastivan\UniversalApi\Core\Database::getInstance()->getConnection()->query('SELECT 1');
+            $connection = Database::getInstance()->getConnection();
+            if ($connection instanceof \PDO) {
+                $connection->query('SELECT 1');
+            } elseif ($connection instanceof \MongoDB\Client) {
+                // Perform a lightweight ping command on the database
+                $dbName = Config::get('DB_DATABASE');
+                $connection->selectDatabase($dbName)->command(['ping' => 1]);
+            } else {
+                // Unknown connection type
+                throw new \Exception("Unknown database connection type");
+            }
         } catch (\Exception $e) {
             $dbStatus = 'error';
             $httpCode = 503;
