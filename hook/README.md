@@ -18,6 +18,17 @@ Un guide complet "Step-by-Step" pour gérer vos utilisateurs.
 *   **Inscription / Connexion** : Code PHP complet et sécurisé (`password_hash`).
 *   **Session Token** : Authentification Stateless moderne sans cookies de session.
 
+### 3. [Système de Jobs (Queue & Workers)](docs/JOBS.md)
+Déchargez votre API des tâches lourdes (Emails, Blockchain) grâce à Redis.
+*   **Création de Jobs** : Classes simples et sérialisables.
+*   **Dispatching** : Envoi en arrière-plan non-bloquant.
+*   **Worker** : Exécution asynchrone.
+
+### 4. [Web3 & Boutique (E-Commerce)](docs/WEB3_SHOP.md)
+Implémentez des fonctionnalités métier avancées.
+*   **Web3** : Balance Crypto et Localisation Live.
+*   **Shop** : Catalogue Produits JSON et gestion de Stock transactionnelle.
+
 ---
 
 ## 📂 Structure du Dossier
@@ -25,6 +36,7 @@ Un guide complet "Step-by-Step" pour gérer vos utilisateurs.
 ```text
 hook/
 ├── Controllers/     # Vos contrôleurs (Logique métier)
+├── Jobs/            # Vos tâches de fond (Queue)
 ├── Middleware/      # Vos middlewares (Auth, Validation...)
 ├── Views/           # Vos templates HTML
 ├── docs/            # Documentation technique détaillée
@@ -43,7 +55,7 @@ $router->get('/api/ping', function() {
 });
 ```
 
-Pour des implémentations plus robustes (Web3, Shop, Auth), référez-vous aux fichiers dans `docs/`.
+Pour des implémentations plus robustes, référez-vous aux fichiers dans `docs/`.
 
 ---
 

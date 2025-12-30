@@ -15,6 +15,12 @@ Cette API est pensée pour être **"Digne des Plus Grands"**, intégrant nativem
 *   **Multi-Base de Données** : Support natif et optimisé pour **MySQL/MariaDB**, **PostgreSQL**, **MongoDB** et **Redis**.
 *   **Haute Disponibilité (HA)** : Support S3 pour config/logs, Endpoints de santé (`/status`).
 
+### 💎 Modules d'Exemple (Guides d'Implémentation)
+Nous fournissons les "Recettes de Cuisine" complètes pour construire :
+*   **Système Utilisateur** : Inscription, Connexion, Session Stateless.
+*   **Web3 & Crypto** : Gestion de balances crypto et géolocalisation live.
+*   **E-Commerce (Boutique)** : Gestion de catalogue produits haute performance.
+
 ### ⚡ Performance
 *   **Moteur de Routing Hybride** : Optimisation O(1) / Regex.
 *   **Caching Redis** : Cache complet des réponses et Rate Limiting atomique.
@@ -29,14 +35,15 @@ Cette API est pensée pour être **"Digne des Plus Grands"**, intégrant nativem
 
 ## 📚 Guide du Développeur : Comment faire une API d'Elite ?
 
-Pour comprendre comment implémenter des fonctionnalités complexes (Auth, Web3, Shop), consultez la documentation détaillée dans le dossier `hook/`.
+Pour comprendre comment implémenter des fonctionnalités complexes (Auth, Web3, Shop, Jobs), consultez la documentation détaillée dans le dossier `hook/`.
 
 👉 **[LIRE LE GUIDE COMPLET D'IMPLÉMENTATION (HOOK/README.MD)](hook/README.md)**
 
 Ce guide explique :
-1.  **Authentification & Base de Données** : Créer des users, gérer des sessions sécurisées via token.
-2.  **Web3** : Intégrer des wallets crypto et de la localisation live.
-3.  **Boutique en Ligne** : Exposer des produits et gérer des stocks en JSON.
+1.  **[Authentification](hook/docs/AUTH_DB.md)** : Créer des users et gérer des sessions sécurisées.
+2.  **[Routing & Sécurité](hook/docs/ROUTING.md)** : Cacher, protéger et limiter vos routes.
+3.  **[Jobs & Files d'Attente](hook/docs/JOBS.md)** : Traiter des tâches lourdes en arrière-plan.
+4.  **[Web3 & E-Commerce](hook/docs/WEB3_SHOP.md)** : Crypto, Localisation et Catalogue Produits.
 
 ---
 
@@ -62,9 +69,9 @@ docker-compose up -d --build
 
 L'API sera accessible sur `http://localhost:8080`.
 
-### 2. Initialisation de la Base de Données (Démo)
+### 2. Initialisation de la Base de Données
 
-Pour tester les fonctionnalités de démonstration (Auth, Shop, Web3), importez le schéma fourni :
+Pour utiliser les exemples des guides, importez le schéma fourni :
 
 ```bash
 # Exemple pour MySQL/MariaDB dans le conteneur db
@@ -82,18 +89,6 @@ La configuration est gérée via les variables d'environnement (`.env`).
 | `APP_ENV` | `local` ou `production`. |
 | `DB_CONNECTION` | `mysql`, `pgsql` ou `mongodb`. |
 | `REDIS_HOST` | Obligatoire pour le cache/session. |
-
----
-
-## 🧪 Tests des Endpoints de Démo
-
-Une fois l'API lancée et la BDD initialisée :
-
-*   **Inscription** : `POST /api/auth/register`
-*   **Connexion** : `POST /api/auth/login` (Retourne un `token`)
-*   **Mon Profil** : `GET /api/user/me` (Header `Authorization: Bearer <token>`)
-*   **Crypto Balance** : `GET /api/web3/balance`
-*   **Produits** : `GET /api/shop/products`
 
 ---
 
