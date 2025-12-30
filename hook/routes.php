@@ -1,31 +1,32 @@
 <?php
 
 /**
- * Custom Routes Hook
- * Developed by Bastivan Consulting
+ * Custom Routes Definition
  *
- * Add your custom routes here.
- * Variable $router is available.
+ * @var \Bastivan\UniversalApi\Core\Router $router
  */
 
-use Bastivan\UniversalApi\Core\Router;
-use Bastivan\UniversalApi\Hook\Controllers\CustomController;
+use Bastivan\UniversalApi\Hook\Controllers\AuthController;
+use Bastivan\UniversalApi\Hook\Controllers\Web3Controller;
+use Bastivan\UniversalApi\Hook\Controllers\ShopController;
+use Bastivan\UniversalApi\Hook\Middleware\AuthMiddleware;
 
-/** @var Router $router */
+// User Auth
+$router->post('/api/auth/register', [AuthController::class, 'register']);
+$router->post('/api/auth/login', [AuthController::class, 'login']);
 
-// Example of a cached route
-$router->get('/custom', [CustomController::class, 'index'], ['cache' => true, 'cache_ttl' => 600]);
-
-// Example of a non-cached route (e.g., authentication)
-// $router->post('/login', [AuthController::class, 'login'], ['cache' => false]);
-
-// Example of route with strict method security
-$router->get('/secure-data', [CustomController::class, 'index'], [
-    'security' => [
-        'allowed_methods' => ['GET'] // Explicitly only allow GET (Redundant here but useful for documentation or if route registration changes)
-    ]
+// User Profile (Protected)
+$router->get('/api/user/me', [AuthController::class, 'me'], [
+    'middleware' => [AuthMiddleware::class]
 ]);
 
-// Example using other methods
-// $router->put('/data/update', [DataController::class, 'update']);
-// $router->delete('/data/delete', [DataController::class, 'delete']);
+// Web3 Features (Protected)
+$router->get('/api/web3/balance', [Web3Controller::class, 'balance'], [
+    'middleware' => [AuthMiddleware::class]
+]);
+$router->match(['GET', 'POST'], '/api/web3/location', [Web3Controller::class, 'location'], [
+    'middleware' => [AuthMiddleware::class]
+]);
+
+// Shop (Public)
+$router->get('/api/shop/products', [ShopController::class, 'products']);

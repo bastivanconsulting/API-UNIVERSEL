@@ -1,163 +1,128 @@
-# Documentation des Hooks - Universal API
+# Guide d'Implémentation - Universal API
 
-Le dossier `hook/` est l'espace réservé aux développeurs pour étendre les fonctionnalités de l'API Universelle.
-Tout le code métier spécifique à votre application doit résider ici pour garantir que le cœur (`src/Core`) reste intact et puisse être mis à jour sans conflit.
+Ce document est le manuel de référence pour construire une API **"Digne des plus grands"**.
+Il explique comment implémenter des fonctionnalités avancées (Auth, Web3, E-commerce) en utilisant le système de Hooks de l'Universal API.
 
-## 📂 Structure du Dossier
-
-```text
-hook/
-├── Controllers/     # Vos contrôleurs (Logique métier)
-├── Middleware/      # Vos middlewares personnalisés (Auth, Validation...)
-├── Views/           # Vos vues (Templates HTML/PHP)
-├── routes.php       # Définition de vos routes personnalisées
-└── README.md        # Ce fichier
-```
-
-L'espace de nom (Namespace) racine pour ce dossier est : `Bastivan\UniversalApi\Hook`.
+Les exemples de code complets se trouvent dans les dossiers `hook/Controllers` et `hook/Middleware`.
 
 ---
 
-## 🚀 Ajouter une nouvelle Route
+## 1. Gestion des Utilisateurs (Auth & DB)
 
-Les routes sont définies dans `hook/routes.php`. Vous avez accès à l'instance `$router`.
+Une API moderne doit être **Stateless**. Cela signifie que nous n'utilisons pas de sessions PHP classiques (`$_SESSION`), mais des **Tokens** stockés en base de données ou signés (JWT).
 
-### Route Simple
+### A. Inscription (Register)
+**Fichier :** `hook/Controllers/AuthController.php` -> `register()`
 
-```php
-use Bastivan\UniversalApi\Hook\Controllers\MonController;
+Le processus est le suivant :
+1.  Recevoir les données JSON (`username`, `password`).
+2.  Vérifier si l'utilisateur existe déjà en Base de Données (MySQL/MariaDB).
+3.  Hacher le mot de passe avec `password_hash()` (Sécurité indispensable).
+4.  Insérer le nouvel utilisateur.
 
-// GET /api/hello
-$router->get('/api/hello', [MonController::class, 'index']);
+```sql
+-- Structure SQL recommandée (voir database/schema.mysql.sql)
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE,
+    password_hash VARCHAR(255),
+    session_token VARCHAR(255) NULL
+);
 ```
 
-### Route avec Paramètres (Regex)
+### B. Connexion (Login)
+**Fichier :** `hook/Controllers/AuthController.php` -> `login()`
 
-Le routeur supporte les expressions régulières pour les paramètres dynamiques.
+1.  Vérifier le couple user/pass (`password_verify`).
+2.  Générer un **Session Token** unique (ex: `bin2hex(random_bytes(32))`).
+3.  Stocker ce token en base de données associé à l'utilisateur.
+4.  Retourner ce token au client JSON.
 
-```php
-// GET /api/users/42
-$router->get('/api/users/([0-9]+)', [MonController::class, 'show']);
-```
+### C. Profil Utilisateur (/user/me)
+**Fichier :** `hook/Controllers/AuthController.php` -> `me()`
 
-### Route avec Options Avancées (Cache, Sécurité, Middleware)
+Pour sécuriser cet endpoint, nous utilisons un **Middleware**.
+Le client doit envoyer le token dans le header : `Authorization: Bearer <token>`.
 
-Le 3ème argument de la méthode de route accepte un tableau d'options.
-
-```php
-$router->get('/api/data', [MonController::class, 'data'], [
-    'cache' => 60,              // Cache la réponse 60 secondes dans Redis
-    'middleware' => [           // Exécute ces middlewares avant le contrôleur
-        \Bastivan\UniversalApi\Hook\Middleware\MonAuthMiddleware::class
-    ],
-    'security' => [
-        'allowed_ips' => ['127.0.0.1'], // Restriction IP spécifique à cette route
-        'allowed_methods' => ['GET']    // Force GET même si la route est définie autrement
-    ]
-]);
-```
+Le Middleware (`hook/Middleware/AuthMiddleware.php`) :
+1.  Récupère le header.
+2.  Vérifie en base de données si le token existe.
+3.  Si valide, laisse passer la requête. Sinon, renvoie 401 Unauthorized.
 
 ---
 
-## 🎮 Créer un Contrôleur
+## 2. Fonctionnalités Web3
 
-Les contrôleurs doivent être placés dans `hook/Controllers/`.
+L'API Universelle est prête pour le futur du web.
 
-Exemple : `hook/Controllers/MonController.php`
+### A. Crypto & Balance
+**Fichier :** `hook/Controllers/Web3Controller.php` -> `balance()`
 
-```php
-<?php
+L'objectif est d'exposer les avoirs numériques de l'utilisateur.
+*   Les données peuvent provenir de la BDD locale (`crypto_balance`) ou être récupérées via une API Blockchain externe.
+*   Le format de réponse doit être clair et précis (JSON).
 
-namespace Bastivan\UniversalApi\Hook\Controllers;
+### B. Système de Localisation en Live
+**Fichier :** `hook/Controllers/Web3Controller.php` -> `location()`
 
-use Bastivan\UniversalApi\Core\Response; // Optionnel, pour le typage ou helpers
+Pour des applications décentralisées (dApps) nécessitant une géolocalisation (ex: logistique, tracking) :
+*   **POST** : Met à jour les coordonnées (Lat/Lon) de l'utilisateur authentifié.
+*   **GET** : Récupère la dernière position connue.
 
-class MonController
+Cela démontre la capacité de l'API à gérer des mises à jour d'état rapides via des requêtes légères.
+
+---
+
+## 3. Créer une Boutique (E-Commerce)
+
+Une API E-commerce doit être rapide et structurée.
+
+**Fichier :** `hook/Controllers/ShopController.php` -> `products()`
+
+### Structure des Données (JSON)
+Le client attend des structures prévisibles. Nous renvoyons toujours du JSON strict.
+
+**Exemple de réponse :**
+```json
 {
-    public function index()
+  "products": [
     {
-        // Retour JSON simple
-        header('Content-Type: application/json');
-        echo json_encode(['message' => 'Bonjour depuis le Hook!']);
-    }
-
-    public function show($id)
+      "id": 1,
+      "name": "Bitcoin Miner S19",
+      "price": "2500.00",
+      "stock": 10
+    },
     {
-        echo json_encode(['user_id' => $id]);
+      "id": 2,
+      "name": "Hardware Wallet",
+      "price": "99.99",
+      "stock": 50
     }
+  ]
 }
 ```
 
----
-
-## 🛡 Créer un Middleware
-
-Les middlewares permettent d'intercepter la requête avant qu'elle n'atteigne le contrôleur (ex: Authentification).
-Ils doivent implémenter une méthode statique `handle(string $uri)`.
-
-Exemple : `hook/Middleware/AdminMiddleware.php`
-
-```php
-<?php
-
-namespace Bastivan\UniversalApi\Hook\Middleware;
-
-class AdminMiddleware
-{
-    public static function handle(string $uri): void
-    {
-        // Vérification d'un header secret par exemple
-        $headers = getallheaders();
-        if (!isset($headers['X-Admin-Token']) || $headers['X-Admin-Token'] !== 'SECRET123') {
-            http_response_code(403);
-            echo json_encode(['error' => 'Accès interdit']);
-            exit; // Arrête l'exécution immédiatement
-        }
-    }
-}
-```
+### Implémentation
+1.  Créer une table `products` (id, name, price, stock).
+2.  Le contrôleur interroge la base via `Database::getInstance()->query()`.
+3.  `echo json_encode(...)` renvoie la donnée brute, rapide et compatible avec tous les clients (Web, Mobile, App).
 
 ---
 
-## 💾 Accès à la Base de Données
+## 4. Documentation API (La Clé du Succès)
 
-Utilisez la classe `Database` du Core pour interagir avec vos données.
+Pour qu'une API soit utilisée par "n'importe qui", elle doit être ultra-documentée.
 
-```php
-use Bastivan\UniversalApi\Core\Database;
+### Swagger / OpenAPI
+L'API Universelle supporte la génération de documentation.
+*   Utilisez des annotations claires dans vos contrôleurs.
+*   Activez Swagger UI via `APP_DOCS_ENABLED=true`.
 
-class UserController
-{
-    public function list()
-    {
-        $db = Database::getInstance();
-
-        // Pour SQL (MySQL/PostgreSQL)
-        $stmt = $db->query("SELECT * FROM users LIMIT 10");
-        $users = $stmt->fetchAll();
-
-        // Pour MongoDB
-        // $users = $db->getConnection()->users->find([], ['limit' => 10]);
-
-        echo json_encode($users);
-    }
-}
-```
+### Bonnes Pratiques Documentées ici :
+1.  **Codes HTTP** : Utilisez les bons codes (200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 500 Server Error).
+2.  **Format d'Erreur Standard** : `{ "error": "Message clair" }`.
+3.  **Versioning** : Préfixez vos routes (ex: `/api/v1/...`) pour ne pas casser les clients existants lors des mises à jour.
 
 ---
 
-## 🎨 Utiliser des Vues
-
-Si vous servez du HTML, placez vos fichiers dans `hook/Views/`.
-
-```php
-public function page()
-{
-    // Inclure la vue simplement
-    require __DIR__ . '/../Views/ma_page.php';
-}
-```
-
----
-
-**Bastivan Consulting** - Universal API
+**Bastivan Consulting** - L'excellence par le code.
