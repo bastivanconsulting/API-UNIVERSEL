@@ -1,0 +1,39 @@
+name: CI Runner
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+jobs:
+  test-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Docker Containers
+        run: docker compose up -d
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for API to be available..."
+          timeout=30
+          while [ $timeout -gt 0 ]; do
+            if curl -s -o /dev/null http://localhost:8080/status; then
+              echo "API is ready!"
+              exit 0
+            fi
+            sleep 1
+            timeout=$((timeout - 1))
+          done
+          echo "Timeout waiting for API"
+          docker compose logs
+          exit 1
+
+      - name: Run Curl Test (No Check Certificate)
+        run: |
+          # The user requested specific curl test on localhost/status with no check certificate
+          # Port 8080 is exposed by docker-compose for the app
+          curl -v -k http://localhost:8080/status
