@@ -115,7 +115,7 @@ class Router
                     if (is_array($handler)) {
                         $controllerName = $handler[0];
                         $action = $handler[1];
-                        $controller = new $controllerName();
+                        $controller = Container::getInstance()->resolve($controllerName);
                         call_user_func_array([$controller, $action], $matches);
                     } else {
                         call_user_func_array($handler, $matches);
@@ -155,7 +155,7 @@ class Router
         }
 
         // 404
-        $controller = new ErrorController();
+        $controller = Container::getInstance()->resolve(ErrorController::class);
         $controller->notFound(['message' => "Route not found: $uri"]);
     }
 }
