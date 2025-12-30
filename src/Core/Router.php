@@ -40,6 +40,13 @@ class Router
         $this->add('PATCH', $path, $handler, $options);
     }
 
+    public function match(array $methods, string $path, callable|array $handler, array $options = []): void
+    {
+        foreach ($methods as $method) {
+            $this->add(strtoupper($method), $path, $handler, $options);
+        }
+    }
+
     private function add(string $method, string $path, callable|array $handler, array $options = []): void
     {
         $this->routes[] = [
