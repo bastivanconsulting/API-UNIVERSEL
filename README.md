@@ -15,11 +15,6 @@ Cette API est pensée pour être **"Digne des Plus Grands"**, intégrant nativem
 *   **Multi-Base de Données** : Support natif et optimisé pour **MySQL/MariaDB**, **PostgreSQL**, **MongoDB** et **Redis**.
 *   **Haute Disponibilité (HA)** : Support S3 pour config/logs, Endpoints de santé (`/status`).
 
-### 💎 Modules "Ready-to-Scale"
-*   **Système Utilisateur Complet** : Inscription, Connexion, Gestion de Session (Token-based) et Profil (`/me`).
-*   **Web3 & Crypto** : Gestion de balances crypto et géolocalisation en temps réel sur la Blockchain.
-*   **E-Commerce (Boutique)** : Gestion de catalogue produits, prix et stocks avec réponses JSON ultra-rapides.
-
 ### ⚡ Performance
 *   **Moteur de Routing Hybride** : Optimisation O(1) / Regex.
 *   **Caching Redis** : Cache complet des réponses et Rate Limiting atomique.
