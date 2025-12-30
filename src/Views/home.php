@@ -158,13 +158,13 @@
         </header>
 
         <div class="grid">
-            <!-- Présentation -->
+            <!-- RESTful & Performance -->
             <div class="card">
                 <!-- Rocket Icon -->
                 <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>
-                <h2>Performance & Design</h2>
+                <h2>Architecture RESTful</h2>
                 <p>
-                    Une fondation MVC légère conçue pour la vitesse. Une structure de code claire qui privilégie la lisibilité et la maintenabilité sans sacrifier la puissance.
+                    Support complet des verbes HTTP (GET, POST, PUT, PATCH, DELETE). Une structure MVC légère et typée (PHP 8.4) pour une latence minimale.
                 </p>
             </div>
             
@@ -172,49 +172,49 @@
             <div class="card">
                 <!-- Lock Icon -->
                 <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                <h2>Sécurité Maximale</h2>
+                <h2>Sécurité Blindée</h2>
                 <p>
-                    SSL/TLS strict, protections anti-injections SQL via PDO et en-têtes de sécurité HTTP renforcés. La protection de vos données est native, pas optionnelle.
+                    Protection CSRF, CORS, et IP Whitelisting. Résolution d'IP de confiance (Cloudflare, Gcore) et headers stricts (HSTS, CSP) par défaut.
                 </p>
             </div>
 
-            <!-- Docker & K8s -->
+            <!-- Database -->
             <div class="card">
-                <!-- Server/Container Icon -->
-                <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                <h2>Cloud Native</h2>
+                <!-- Database Icon -->
+                <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                <h2>Écosystème de Données</h2>
                 <p>
-                    Déploiement instantané avec Docker et Kubernetes. Architecture stateless prête pour la scalabilité horizontale et la haute disponibilité.
+                    Support natif interchangeable pour PostgreSQL et MariaDB via PDO. Abstraction robuste pour garantir la portabilité et la sécurité des données.
                 </p>
             </div>
 
-            <!-- S3 -->
+            <!-- HA & S3 -->
             <div class="card">
                 <!-- Cloud Icon -->
                 <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"></path><path d="M17.5 19H19a5 5 0 0 0 4-5 5 5 0 0 0-5-5h-1a6 6 0 0 0-10.9-1 4 4 0 0 0-6.1 4 4 4 0 0 0 4 6h1.5"></path></svg>
-                <h2>Stockage Distribué (S3)</h2>
+                <h2>Haute Disponibilité (HA)</h2>
                 <p>
-                    Intégration transparente avec S3 pour le stockage de configurations et d'assets. Conçu pour garantir la persistance des données en environnement clusterisé.
+                    Configuration et logs centralisés sur S3. Architecture stateless prête pour Docker et Kubernetes, assurant résilience et scalabilité.
                 </p>
             </div>
 
-            <!-- Redis -->
+            <!-- Performance & Cache -->
             <div class="card">
                 <!-- Lightning Icon -->
                 <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                <h2>Redis & Rate Limiting</h2>
+                <h2>Performance & Caching</h2>
                 <p>
-                    Gestion avancée du trafic et protection contre les abus grâce au Rate Limiting adossé à Redis. Vos ressources restent disponibles et performantes.
+                    Rate Limiting atomique et mise en cache intelligente des routes complètes via Redis. Vos endpoints répondent en quelques millisecondes.
                 </p>
             </div>
 
-            <!-- Hooks -->
+            <!-- Extensibilité -->
             <div class="card">
                 <!-- Puzzle Icon -->
                 <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="3" width="7" height="7"></rect></svg>
-                <h2>Architecture de Hooks</h2>
+                <h2>Extensibilité Totale</h2>
                 <p>
-                    Étendez les fonctionnalités du cœur sans le modifier. Le système de hooks permet une personnalisation profonde tout en facilitant les mises à jour futures.
+                    Injectez routes, middlewares et vues via le système de hooks. Support pour l'authentification custom et l'isolation du code métier.
                 </p>
             </div>
         </div>
