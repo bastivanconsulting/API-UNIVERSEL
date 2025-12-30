@@ -4,6 +4,8 @@ Bienvenue sur la fondation de l'API Universelle développée par **Bastivan Cons
 
 Ce projet fournit une architecture robuste, sécurisée et extensible pour des APIs modernes en **PHP 8.4+**. Elle est conçue pour la haute disponibilité, la performance, et la sécurité dès la conception.
 
+Cette API est pensée pour être **"Digne des Plus Grands"**, intégrant nativement des concepts avancés comme le Web3, le E-commerce temps réel et une sécurité militaire.
+
 ---
 
 ## 🚀 Fonctionnalités Clés
@@ -11,41 +13,48 @@ Ce projet fournit une architecture robuste, sécurisée et extensible pour des A
 ### 🏗 Architecture & Core
 *   **Architecture MVC Légère** : Une structure claire sans la lourdeur des frameworks monolithiques.
 *   **Multi-Base de Données** : Support natif et optimisé pour **MySQL/MariaDB**, **PostgreSQL**, **MongoDB** et **Redis**.
-*   **Haute Disponibilité (HA)** :
-    *   Chargement de la configuration dynamique (Support S3).
-    *   Gestion centralisée des logs (Local ou S3).
-    *   Endpoints de santé (`/status`) pour Kubernetes/Load Balancers.
+*   **Haute Disponibilité (HA)** : Support S3 pour config/logs, Endpoints de santé (`/status`).
+
+### 💎 Modules "Ready-to-Scale" (Démos incluses)
+*   **Système Utilisateur Complet** : Inscription, Connexion, Gestion de Session (Token-based) et Profil (`/me`).
+*   **Web3 & Crypto** : Gestion de balances crypto et géolocalisation en temps réel sur la Blockchain.
+*   **E-Commerce (Boutique)** : Gestion de catalogue produits, prix et stocks avec réponses JSON ultra-rapides.
 
 ### ⚡ Performance
-*   **Moteur de Routing Hybride** : Optimisation O(1) pour les routes statiques via HashMap et support Regex pour les routes dynamiques.
-*   **Caching Avancé** : Cache complet des réponses (Body, Headers, Status) dans Redis.
-*   **Rate Limiting** : Protection contre les abus via Redis (Atomic Increments).
-*   **Compression** : Support GZIP natif.
+*   **Moteur de Routing Hybride** : Optimisation O(1) / Regex.
+*   **Caching Redis** : Cache complet des réponses et Rate Limiting atomique.
+*   **Compression GZIP** : Activée par défaut.
 
 ### 🔒 Sécurité (Security by Design)
-*   **Protection CSRF** : Validation stricte pour les requêtes modifiant l'état (POST, PUT, etc.).
-*   **Headers de Sécurité** : HSTS, CSP, X-Content-Type-Options, X-Frame-Options forcés par défaut.
-*   **IP Whitelisting & Trusted Proxies** : Résolution intelligente des IPs réelles (Cloudflare, Gcore) et filtrage par IP/CIDR.
-*   **Prepared Statements** : Toutes les interactions SQL utilisent `PDO` préparé pour bloquer les injections SQL.
-*   **Contrôle des Méthodes** : Restriction granulaire des méthodes HTTP autorisées (Globalement ou par Route).
+*   **Protection CSRF & Headers Stricts** (HSTS, CSP, etc.).
+*   **IP Whitelisting & Trusted Proxies**.
+*   **Prepared Statements** : 100% PDO pour éviter les injections SQL.
+
+---
+
+## 📚 Guide du Développeur : Comment faire une API d'Elite ?
+
+Pour comprendre comment implémenter des fonctionnalités complexes (Auth, Web3, Shop), consultez la documentation détaillée dans le dossier `hook/`.
+
+👉 **[LIRE LE GUIDE COMPLET D'IMPLÉMENTATION (HOOK/README.MD)](hook/README.md)**
+
+Ce guide explique :
+1.  **Authentification & Base de Données** : Créer des users, gérer des sessions sécurisées via token.
+2.  **Web3** : Intégrer des wallets crypto et de la localisation live.
+3.  **Boutique en Ligne** : Exposer des produits et gérer des stocks en JSON.
 
 ---
 
 ## 📋 Prérequis
 
 *   **Docker & Docker Compose** (Recommandé)
-*   Ou manuel :
-    *   PHP 8.4+ (Extensions: `pdo`, `pdo_mysql`, `pdo_pgsql`, `mongodb`, `redis`, `ctype`, `curl`)
-    *   Redis Server 6+
-    *   MariaDB 10.6+ / PostgreSQL 14+ / MongoDB 5+
+*   Ou manuel : PHP 8.4+, Redis, MariaDB/PostgreSQL/MongoDB.
 
 ---
 
 ## 🛠 Installation & Démarrage
 
 ### 1. Via Docker (Recommandé)
-
-C'est la méthode la plus simple pour démarrer un environnement complet.
 
 ```bash
 # Cloner le dépôt
@@ -58,65 +67,38 @@ docker-compose up -d --build
 
 L'API sera accessible sur `http://localhost:8080`.
 
-### 2. Installation Manuelle
+### 2. Initialisation de la Base de Données (Démo)
+
+Pour tester les fonctionnalités de démonstration (Auth, Shop, Web3), importez le schéma fourni :
 
 ```bash
-# Installer les dépendances
-composer install
-
-# Configurer l'environnement
-cp .env.example .env
-# (Éditez .env selon vos besoins)
-
-# Lancer le serveur de développement
-php -S localhost:8000 -t public
+# Exemple pour MySQL/MariaDB dans le conteneur db
+docker-compose exec -T db mysql -u user -ppassword database < database/schema.mysql.sql
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-La configuration est gérée via les variables d'environnement (`.env`). Voici les principales options :
+La configuration est gérée via les variables d'environnement (`.env`).
 
-### Général
 | Variable | Description |
 |----------|-------------|
-| `APP_ENV` | `local` ou `production`. En production, les erreurs sont masquées. |
-| `APP_DEBUG` | `true` pour activer les traces détaillées. |
-| `APP_PORT` | Port d'écoute (Défaut: 8080). |
-
-### Base de Données & Redis
-| Variable | Description |
-|----------|-------------|
+| `APP_ENV` | `local` ou `production`. |
 | `DB_CONNECTION` | `mysql`, `pgsql` ou `mongodb`. |
-| `DB_HOST`, `DB_PORT`, `DB_DATABASE` | Paramètres de connexion BDD. |
-| `REDIS_HOST`, `REDIS_PORT` | Paramètres Redis (Obligatoire pour le RateLimit/Cache). |
-
-### Sécurité
-| Variable | Description |
-|----------|-------------|
-| `SECURITY_ALLOWED_METHODS` | Liste des méthodes autorisées globalement (ex: `GET,POST`). |
-| `SECURITY_ACCESS_STRATEGY` | `ALLOW_ALL` ou `WHITELIST` (Filtrage IP global). |
-| `SECURITY_ALLOWED_IPS` | Liste des IPs autorisées si la stratégie est `WHITELIST`. |
-| `CORS_ALLOWED_ORIGINS` | Domaines autorisés pour le CORS (ex: `https://mon-app.com`). |
+| `REDIS_HOST` | Obligatoire pour le cache/session. |
 
 ---
 
-## 🪝 Extensibilité (Hooks)
+## 🧪 Tests des Endpoints de Démo
 
-L'API utilise un système de **Hooks** puissant situé dans le dossier `hook/`.
-Cela permet d'ajouter des routes, des contrôleurs, des vues et des middlewares **sans modifier le cœur du framework** dans `src/`.
+Une fois l'API lancée et la BDD initialisée :
 
-👉 **Voir la documentation complète des Hooks : [hook/README.md](hook/README.md)**
-
----
-
-## 🧪 Tests & Vérification
-
-Pour vérifier que l'API fonctionne correctement :
-
-1.  Accédez à la page d'accueil : `http://localhost:8080/` (Doit afficher la page "Universal API").
-2.  Vérifiez le statut du système : `http://localhost:8080/status` (Retourne JSON avec l'état DB/Redis).
+*   **Inscription** : `POST /api/auth/register`
+*   **Connexion** : `POST /api/auth/login` (Retourne un `token`)
+*   **Mon Profil** : `GET /api/user/me` (Header `Authorization: Bearer <token>`)
+*   **Crypto Balance** : `GET /api/web3/balance`
+*   **Produits** : `GET /api/shop/products`
 
 ---
 
