@@ -17,6 +17,17 @@ class SecurityMiddleware
 {
     public static function handle(): void
     {
+        // 0. Security Headers ("Defense in Depth")
+        // HSTS: Tell clients to always use HTTPS (1 year)
+        header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+
+        // CSP: Prevent XSS and other injections.
+        // We allow 'unsafe-inline' for styles because the landing page uses it.
+        header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'");
+
+        // X-Content-Type-Options: Prevent MIME-sniffing
+        header("X-Content-Type-Options: nosniff");
+
         // 1. Force HTTPS
         // In most production environments with load balancers (AWS, K8s), logic might differ (X-Forwarded-Proto).
         // But the requirement says "SSL Certificate Mandatory, No HTTP".
