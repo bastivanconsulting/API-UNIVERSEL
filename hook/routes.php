@@ -9,4 +9,4 @@
 use Bastivan\UniversalApi\Hook\Controllers\CustomController;
 
 // Example Route
-$router->get('/api/custom', [CustomController::class, 'index']);
+$router->get('/hook/custom', [CustomController::class, 'index']);
