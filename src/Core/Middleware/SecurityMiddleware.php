@@ -23,7 +23,8 @@ class SecurityMiddleware
 
         // CSP: Prevent XSS and other injections.
         // We allow 'unsafe-inline' for styles because the landing page uses it.
-        header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'");
+        // We allow cdnjs and unsafe-inline scripts for Swagger UI documentation.
+        header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' https://cdnjs.cloudflare.com data:; frame-ancestors 'none'");
 
         // X-Content-Type-Options: Prevent MIME-sniffing
         header("X-Content-Type-Options: nosniff");
