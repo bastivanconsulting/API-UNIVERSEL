@@ -137,7 +137,21 @@ class Router
                     if ($cacheEnabled) {
                         ob_end_clean(); // Discard buffer on error
                     }
-                    throw $e; // Re-throw
+
+                    // Log error
+                    Logger::error("Route Execution Failed: " . $e->getMessage(), [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'uri' => $uri
+                    ]);
+
+                    // Use ErrorController to render a proper 500 response
+                    $errorController = Container::getInstance()->resolve(ErrorController::class);
+                    $errorController->internalServerError([
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]);
                 }
 
                 if ($cacheEnabled) {

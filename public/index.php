@@ -45,7 +45,12 @@ $router->get('/docs/schema', [Bastivan\UniversalApi\Controllers\DocsController::
 // Load Custom Hooks
 $hookBootstrap = __DIR__ . '/../hook/bootstrap.php';
 if (file_exists($hookBootstrap)) {
-    require_once $hookBootstrap;
+    try {
+        require_once $hookBootstrap;
+    } catch (\Throwable $e) {
+        \Bastivan\UniversalApi\Core\Logger::error("Hook Bootstrap Failed: " . $e->getMessage());
+        // We continue execution, allowing Core to run even if Hooks fail
+    }
 }
 
 // Dispatch
