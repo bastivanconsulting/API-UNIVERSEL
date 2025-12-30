@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Generate SSL Certificates
+        run: |
+          chmod +x docker/generate-certs.sh
+          ./docker/generate-certs.sh
+
       - name: Start Docker Containers
         run: docker compose up -d
 
