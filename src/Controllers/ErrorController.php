@@ -29,6 +29,22 @@ class ErrorController
             ];
         }
 
+        // Check for Accept: application/json
+        if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')) {
+            header('Content-Type: application/json');
+            $response = [
+                'error' => true,
+                'message' => $message,
+            ];
+
+            if ($debug) {
+                $response['debug'] = $debug;
+            }
+
+            echo json_encode($response);
+            exit;
+        }
+
         // Variable for the view
         $title = $title;
         $message = $message;
