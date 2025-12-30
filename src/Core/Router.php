@@ -44,10 +44,16 @@ class Router
     {
         $this->routes[] = [
             'method' => $method,
+            'path' => $path,
             'pattern' => '#^' . $path . '$#',
             'handler' => $handler,
             'options' => $options
         ];
+    }
+
+    public function getRoutes(): array
+    {
+        return $this->routes;
     }
 
     public function dispatch(): void
