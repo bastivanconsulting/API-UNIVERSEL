@@ -31,8 +31,16 @@ GzipMiddleware::handle();
 // Setup Routing
 $router = new Router();
 
+// Register Router in Container
+Bastivan\UniversalApi\Core\Container::getInstance()->instance(Router::class, $router);
+
 $router->get('/', [HomeController::class, 'index']);
 $router->get('/status', [HomeController::class, 'status']);
+
+// Documentation Routes (Registered conditionally inside Controller but route must exist to be dispatched)
+// We register them globally, logic inside controller handles the check.
+$router->get('/docs', [Bastivan\UniversalApi\Controllers\DocsController::class, 'index']);
+$router->get('/docs/schema', [Bastivan\UniversalApi\Controllers\DocsController::class, 'schema']);
 
 // Load Custom Hooks
 $hookBootstrap = __DIR__ . '/../hook/bootstrap.php';
