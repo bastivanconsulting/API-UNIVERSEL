@@ -35,7 +35,8 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # Permissions
-RUN chown -R www-data:www-data /var/www/html/logs
+RUN mkdir -p /var/www/html/logs \
+    && chown -R www-data:www-data /var/www/html/logs
 
 EXPOSE 9000
 
