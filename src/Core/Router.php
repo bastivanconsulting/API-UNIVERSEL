@@ -40,6 +40,13 @@ class Router
         $this->add('PATCH', $path, $handler, $options);
     }
 
+    public function match(array $methods, string $path, callable|array $handler, array $options = []): void
+    {
+        foreach ($methods as $method) {
+            $this->add(strtoupper($method), $path, $handler, $options);
+        }
+    }
+
     private function add(string $method, string $path, callable|array $handler, array $options = []): void
     {
         $this->routes[] = [
@@ -130,7 +137,21 @@ class Router
                     if ($cacheEnabled) {
                         ob_end_clean(); // Discard buffer on error
                     }
-                    throw $e; // Re-throw
+
+                    // Log error
+                    Logger::error("Route Execution Failed: " . $e->getMessage(), [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'uri' => $uri
+                    ]);
+
+                    // Use ErrorController to render a proper 500 response
+                    $errorController = Container::getInstance()->resolve(ErrorController::class);
+                    $errorController->internalServerError([
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]);
                 }
 
                 if ($cacheEnabled) {
